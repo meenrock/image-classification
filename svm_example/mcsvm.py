@@ -1,57 +1,35 @@
-from sklearn.linear_model import SGDClassifier
-from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
-from sklearn.pipeline import Pipeline
-import time
-import pandas as pd
-import urllib.request, json
-import os
-from dotenv import load_dotenv
-from nltk import wordnet as wn
+from sklearn import svm, datasets
+import sklearn.model_selection as model_selection
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import f1_score
 
-load_dotenv()
+class mcsvm:
 
-def clean(text):
-    for punctuation in string.punctuation:
-        text = text.replace(punctuation, ' ') # Remove Punctuation
-    lowercased = text.lower() # Lower Case
-    tokenized = word_tokenize(lowercased) # Tokenize
-    words_only = [word for word in tokenized if word.isalpha()] # Remove numbers
-    stop_words = set(stopwords.words('english')) # Make stopword list
-    without_stopwords = [word for word in words_only if not word in stop_words] # Remove Stop Words
-    lemma=WordNetLemmatizer() # Initiate Lemmatizer
-    lemmatized = [lemma.lemmatize(word) for word in without_stopwords] # Lemmatize
-    return lemmatized
+    def iris_test_data_mcsvm():
+        # load testing dataset from sklearn
+        iris = datasets.load_iris()
+        # split training and testing dataset
+        X = iris.data[:, :2]
+        y = iris.target
+        X_train, X_test, y_train, y_test = model_selection.train_test_split(X, y, train_size=0.80, test_size=0.20, random_state=101)
+        # select kernel to create 2 object
+        rbf = svm.SVC(kernel='rbf', gamma=0.5, C=0.1).fit(X_train, y_train)
+        poly = svm.SVC(kernel='poly', degree=3, C=1).fit(X_train, y_train)
+        # prediction efficiency
+        poly_pred = poly.predict(X_test)
+        rbf_pred = rbf.predict(X_test)
+        # calculate metrics for poly kernel
+        poly_accuracy = accuracy_score(y_test, poly_pred)
+        poly_f1 = f1_score(y_test, poly_pred, average='weighted')
+        print('Accuracy (Polynomial Kernel): ', "%.2f" % (poly_accuracy*100))
+        print('F1 (Polynomial Kernel): ', "%.2f" % (poly_f1*100))
+        # calculate metrics for rbf kernel
+        rbf_accuracy = accuracy_score(y_test, rbf_pred)
+        rbf_f1 = f1_score(y_test, rbf_pred, average='weighted')
+        print('Accuracy (RBF Kernel): ', "%.2f" % (rbf_accuracy*100))
+        print('F1 (RBF Kernel): ', "%.2f" % (rbf_f1*100))
 
-def all_df_pexels(style_list):
-    url = "".format(os.environ.get("PEXEL_API_KEY"))
-    response = urllib.request.urlopen(url)
-    api = response.read()
+        return { poly_accuracy: poly_accuracy }
 
 
-    """Fuction gets API data from a list of styles 
-    and creates one full df with the required columns"""
-    style_df = []
-    
-    for index, style in enumerate(style_list):
-        data_list = []
-        for i in range(1,10):
-                photos = api.search(style, page=i, results_per_page=45)['photos']
-                data_list.append(pd.DataFrame.from_dict(photos))
-                
-        merged = pd.concat(data_list)
-        merged = merged[['id', 'alt']]
-        merged['style'] = style
-        style_df.append(merged)
-    
-    all_df = pd.concat(style_df)
-    
-    return all_df
 
-sgd = Pipeline([('vect', CountVectorizer()),
-                ('tfidf', TfidfTransformer()),
-                ('clf', SGDClassifier(loss='hinge', penalty='l2',alpha=1e-3, random_state=42, max_iter=5, tol=None)),
-               ])
-sgd.fit(X_train, y_train)
-time
-y_pred = sgd.predict(X_test)
-print('accuracy %s' % accuracy_score(y_pred, y_test))

@@ -2,6 +2,7 @@ from flask import Flask, request, render_template, Response
 from kafka import KafkaConsumer, KafkaProducer
 import json
 import time
+from svm_example.mcsvm import mcsvm
 
 producer = KafkaProducer(
     bootstrap_servers=KAFKA_SERVER, #KAFKA SERVER
@@ -38,6 +39,10 @@ def pizza_ready(my_id=None):
     )
     producer.flush()
     return "OK"
+
+@app.router('/test/mcsvm',methods=['GET'])
+def test_mcsvm():
+    mcsvm.iris_test_data_mcsvm()
 
 
 if __name__ == "__main__":
